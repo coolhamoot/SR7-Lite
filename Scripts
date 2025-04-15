@@ -1,0 +1,140 @@
+-- SR7 Lite Executor by Team C00lHamoot
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SR7LiteExecutor"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 400, 0, 250)
+MainFrame.Position = UDim2.new(0.35, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(140, 0, 40)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = screenGui
+Instance.new("UICorner", MainFrame)
+
+-- UI Gradient
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new{
+ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),  -- Bright Red
+ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 105, 180))  -- Bright Pink
+}
+gradient.Rotation = 0
+gradient.Parent = MainFrame
+
+task.spawn(function()
+while true do
+for i = 0, 360, 1 do
+gradient.Rotation = i
+task.wait(0.03)
+end
+end
+end)
+
+-- Script Box
+local scriptBox = Instance.new("TextBox")
+scriptBox.Size = UDim2.new(0, 380, 0, 150)
+scriptBox.Position = UDim2.new(0, 10, 0, 10)
+scriptBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+scriptBox.TextColor3 = Color3.new(0, 0, 0)
+scriptBox.ClearTextOnFocus = false
+scriptBox.MultiLine = true
+scriptBox.TextWrapped = true
+scriptBox.TextScaled = false
+scriptBox.Font = Enum.Font.SourceSans
+scriptBox.Text = ""
+scriptBox.Parent = MainFrame
+scriptBox.BackgroundTransparency = 0.6
+Instance.new("UICorner", scriptBox)
+
+-- Buttons
+local buttons = {
+{"Execute", UDim2.new(0, 10, 0, 170)},
+{"Insert", UDim2.new(0, 120, 0, 170)},
+}
+
+for _, data in pairs(buttons) do
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 100, 0, 40)
+button.Position = data[2]
+button.Text = data[1]
+button.TextColor3 = Color3.new(0, 0, 0)
+button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+button.Font = Enum.Font.SourceSansBold
+button.TextScaled = true
+button.Parent = MainFrame
+button.BackgroundTransparency = 0.6
+Instance.new("UICorner", button)
+
+-- Execute button  
+if data[1] == "Execute" then  
+    button.MouseButton1Click:Connect(function()  
+        local scriptText = scriptBox.Text  
+        local success, errorMessage = pcall(loadstring(scriptText))  
+        if success then  
+            print("Script executed successfully.")  
+        else  
+            warn("Error executing script: " .. errorMessage)  
+        end  
+    end)  
+end  
+  
+-- Insert button  
+if data[1] == "Insert" then  
+    button.MouseButton1Click:Connect(function()  
+        local scriptText = scriptBox.Text  
+        if scriptText and scriptText ~= "" then  
+            -- Send script content to the server  
+            game.ReplicatedStorage.ScriptInsertEvent:FireServer(scriptText)  
+            print("Script insertion request sent to server.")  
+        else  
+            warn("No script content found.")  
+        end  
+    end)  
+end
+
+end
+
+-- Drag functionality
+local function dragify(frame)
+local dragToggle = nil
+local dragSpeed = 0.15
+local dragInput, dragStart, startPos
+
+local function updateInput(input)  
+    local delta = input.Position - dragStart  
+    local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,  
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y)  
+    game:GetService("TweenService"):Create(frame, TweenInfo.new(dragSpeed), {Position = position}):Play()  
+end  
+
+frame.InputBegan:Connect(function(input)  
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
+        dragToggle = true  
+        dragStart = input.Position  
+        startPos = frame.Position  
+        input.Changed:Connect(function()  
+            if input.UserInputState == Enum.UserInputState.End then  
+                dragToggle = false  
+            end  
+        end)  
+    end  
+end)  
+
+frame.InputChanged:Connect(function(input)  
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then  
+        dragInput = input  
+    end  
+end)  
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)  
+    if input == dragInput and dragToggle then  
+        updateInput(input)  
+    end  
+end)
+
+end
+
+-- Make the MainFrame draggable
+dragify(MainFrame)
